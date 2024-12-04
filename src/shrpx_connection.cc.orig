@@ -63,6 +63,12 @@ Connection::Connection(struct ev_loop *loop, int fd, SSL *ssl,
 Connection::~Connection() { disconnect(); }
 
 void Connection::disconnect() {
+  ev_timer_stop(loop, &rt);
+  ev_timer_stop(loop, &wt);
+
+  rlimit.stopw();
+  wlimit.stopw();
+
   if (tls.ssl) {
     SSL_set_app_data(tls.ssl, nullptr);
     SSL_set_shutdown(tls.ssl, SSL_RECEIVED_SHUTDOWN);
@@ -77,14 +83,6 @@ void Connection::disconnect() {
     close(fd);
     fd = -1;
   }
-
-  // Stop watchers here because they could be activated in
-  // SSL_shutdown().
-  ev_timer_stop(loop, &rt);
-  ev_timer_stop(loop, &wt);
-
-  rlimit.stopw();
-  wlimit.stopw();
 }
 
 int Connection::tls_handshake() {
